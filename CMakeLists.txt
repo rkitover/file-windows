@@ -49,24 +49,24 @@ set(LIBMAGIC_SOURCE_FILES
   file/src/is_csv.c
 )
 
-# replace the version in the magic.h.in and write it to magic.h
-FILE(READ file/src/magic.h.in MAGIC_H_CONTENT)
-STRING(REPLACE "." "" FILE_VERSION_WITHOUT_DOT "${FILE_VERSION}")
-STRING(REPLACE "X.YY" ${FILE_VERSION_WITHOUT_DOT} MAGIC_H_CONTENT_NEW "${MAGIC_H_CONTENT}")
-FILE(WRITE file/src/magic.h "${MAGIC_H_CONTENT_NEW}")
+# Replace the version in the magic.h.in and write it to magic.h
+file(READ file/src/magic.h.in MAGIC_H_CONTENT)
+string(REPLACE "." "" FILE_VERSION_WITHOUT_DOT "${FILE_VERSION}")
+string(REPLACE "X.YY" ${FILE_VERSION_WITHOUT_DOT} MAGIC_H_CONTENT_NEW "${MAGIC_H_CONTENT}")
+file(WRITE file/src/magic.h "${MAGIC_H_CONTENT_NEW}")
 
 
-FILE(READ file/src/readelf.c READELF_C_CONTENT)
-STRING(CONCAT READELF_C_CONTENT_NEW "#include <dirent.h>\n" "${READELF_C_CONTENT}")
-FILE(WRITE ${CMAKE_CURRENT_BINARY_DIR}/readelf.c "${READELF_C_CONTENT_NEW}")
+file(READ file/src/readelf.c READELF_C_CONTENT)
+string(CONCAT READELF_C_CONTENT_NEW "#include <dirent.h>\n" "${READELF_C_CONTENT}")
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/readelf.c "${READELF_C_CONTENT_NEW}")
 
-FILE(READ file/src/magic.c MAGIC_C_CONTENT)
-STRING(CONCAT MAGIC_C_CONTENT_NEW "#include <dirent.h>\n" "${MAGIC_C_CONTENT}")
-FILE(WRITE ${CMAKE_CURRENT_BINARY_DIR}/magic.c "${MAGIC_C_CONTENT_NEW}")
+file(READ file/src/magic.c MAGIC_C_CONTENT)
+string(CONCAT MAGIC_C_CONTENT_NEW "#include <dirent.h>\n" "${MAGIC_C_CONTENT}")
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/magic.c "${MAGIC_C_CONTENT_NEW}")
 
-FILE(READ file/src/file.h FILE_H_CONTENT)
-STRING(CONCAT FILE_H_CONTENT_NEW "#ifdef WIN32\n#include <unistd.h>\n#include <dirent.h>\n#undef S_IFLNK\n#undef S_IFSOCK\n#endif\n" "${FILE_H_CONTENT}")
-FILE(WRITE file/src/file.h "${FILE_H_CONTENT_NEW}")
+file(READ file/src/file.h FILE_H_CONTENT)
+string(CONCAT FILE_H_CONTENT_NEW "#ifdef WIN32\n#include <unistd.h>\n#include <dirent.h>\n#undef S_IFLNK\n#undef S_IFSOCK\n#endif\n" "${FILE_H_CONTENT}")
+file(WRITE file/src/file.h "${FILE_H_CONTENT_NEW}")
 
 add_library(libmagicstatic STATIC ${LIBMAGIC_SOURCE_FILES})
 
@@ -90,6 +90,20 @@ add_executable(file_test file/tests/test.c)
 target_link_libraries(file_test libmagicstatic pcre2-posix shlwapi)
 target_link_libraries(file libmagicstatic pcre2-posix shlwapi)
 
+# Cleanup changes to submodules post-build.
+add_custom_command(
+    TARGET file POST_BUILD
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/file
+    COMMAND git reset --hard HEAD
+    COMMAND git clean -dxf
+)
+
+add_custom_command(
+    TARGET file POST_BUILD
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/pcre2
+    COMMAND git reset --hard HEAD
+    COMMAND git clean -dxf
+)
 
 # this tests all because of time-zone or crlf errors
 set(DISABLED_TESTS 
@@ -99,6 +113,7 @@ set(DISABLED_TESTS
   )
 
 enable_testing()
+
 file(GLOB TESTFILES "file/tests/*.testfile")
 foreach(TEST_FILE ${TESTFILES})
   # extract testname from path and generate command

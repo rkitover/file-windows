@@ -1,0 +1,42 @@
+#pragma code_page(65001)
+
+AAAAA_MAINICON ICON "data/filelogo.ico"
+
+#include "file-version.h"
+#include "magic-mgc-rc.h"
+
+MAGIC_MGC_RC RCDATA "data/magic.mgc"
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION FILE_VERSION
+ PRODUCTVERSION FILE_VERSION
+ FILEFLAGSMASK 0x17L
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "Comments", "file, command to determine file type"
+            VALUE "CompanyName", "http://www.darwinsys.com/file/"
+            VALUE "FileDescription", "console command"
+            VALUE "FileVersion", FILE_VERSION_STR
+            VALUE "InternalName", "file"
+            VALUE "LegalCopyright", "Copyright (c) Ian F. Darwin 1986, 1987, 1989, 1990, 1991, 1992, 1994, 1995."
+            VALUE "OriginalFilename", "file.exe"
+            VALUE "ProductName", "file"
+            VALUE "ProductVersion", FILE_VERSION_STR
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END

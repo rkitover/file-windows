@@ -1,6 +1,7 @@
 [submodule "file"]
 	path = file
-	url = https://github.com/file/file.git
+	url = https://github.com/rkitover/file.git
+	branch = embedded-mgc
 [submodule "dirent"]
 	path = dirent
 	url = https://github.com/tronkko/dirent.git

@@ -9,6 +9,12 @@ endfunction()
 
 set(FILE_VERSION 5.41)
 
+configure_file(
+  "file-version.h.in"
+  "${CMAKE_BINARY_DIR}/file-version.h"
+  @ONLY
+)
+
 set(WIN_COMPAT_SOURCES 
   file/src/asctime_r.c
   file/src/asprintf.c
@@ -55,7 +61,6 @@ string(REPLACE "." "" FILE_VERSION_WITHOUT_DOT "${FILE_VERSION}")
 string(REPLACE "X.YY" ${FILE_VERSION_WITHOUT_DOT} MAGIC_H_CONTENT_NEW "${MAGIC_H_CONTENT}")
 file(WRITE file/src/magic.h "${MAGIC_H_CONTENT_NEW}")
 
-
 file(READ file/src/readelf.c READELF_C_CONTENT)
 string(CONCAT READELF_C_CONTENT_NEW "#include <dirent.h>\n" "${READELF_C_CONTENT}")
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/readelf.c "${READELF_C_CONTENT_NEW}")
@@ -69,6 +74,9 @@ string(CONCAT FILE_H_CONTENT_NEW "#ifdef WIN32\n#include <unistd.h>\n#include <d
 file(WRITE file/src/file.h "${FILE_H_CONTENT_NEW}")
 
 add_library(libmagicstatic STATIC ${LIBMAGIC_SOURCE_FILES})
+
+target_include_directories(libmagicstatic PRIVATE ${CMAKE_SOURCE_DIR})
+target_compile_definitions(libmagicstatic PRIVATE -DMAGIC_RESOURCE)
 
 target_include_directories(libmagicstatic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/win-headers pcre2/src file/src dirent/include getopt)
 target_compile_definitions(libmagicstatic PUBLIC -DHAVE_CONFIG_H -DVERSION="${FILE_VERSION}" -DWIN32_LEAN_AND_MEAN -DWIN32 -DPCRE2_STATIC -DHAVE_FORK=0 -Dpipe=sizeof -Dfcntl=sizeof -DF_SETFD=0)
@@ -85,7 +93,10 @@ add_subdirectory(pcre2)
 # copy /pcre2posix.h to regex.h so it can be used as posix regex libary
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/pcre2/src/pcre2posix.h ${CMAKE_CURRENT_SOURCE_DIR}/pcre2/src/regex.h COPYONLY)
 
-add_executable(file file/src/file.c)
+add_executable(file file/src/file.c file.rc)
+
+target_include_directories(file PRIVATE "${CMAKE_BINARY_DIR}")
+
 add_executable(file_test file/tests/test.c)
 target_link_libraries(file_test libmagicstatic pcre2-posix shlwapi)
 target_link_libraries(file libmagicstatic pcre2-posix shlwapi)

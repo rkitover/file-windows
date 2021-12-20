@@ -1,0 +1,1 @@
+#define MAGIC_MGC_RC 300

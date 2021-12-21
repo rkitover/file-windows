@@ -1,7 +1,6 @@
 [submodule "file"]
 	path = file
 	url = https://github.com/rkitover/file.git
-	branch = embedded-mgc
 [submodule "dirent"]
 	path = dirent
 	url = https://github.com/tronkko/dirent.git
@@ -11,3 +10,12 @@
 [submodule "pcre2"]
 	path = pcre2
 	url = https://github.com/PhilipHazel/pcre2.git
+[submodule "zlib-ng"]
+	path = zlib-ng
+	url = https://github.com/zlib-ng/zlib-ng.git
+[submodule "lzma"]
+	path = lzma
+	url = https://git.tukaani.org/xz.git
+[submodule "bzip2"]
+	path = bzip2
+	url = git://sourceware.org/git/bzip2.git

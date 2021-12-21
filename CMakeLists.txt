@@ -78,11 +78,14 @@ add_library(libmagicstatic STATIC ${LIBMAGIC_SOURCE_FILES})
 target_include_directories(libmagicstatic PRIVATE ${CMAKE_SOURCE_DIR})
 target_compile_definitions(libmagicstatic PRIVATE -DMAGIC_RESOURCE)
 
-target_include_directories(libmagicstatic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/win-headers pcre2/src file/src dirent/include getopt)
-target_compile_definitions(libmagicstatic PUBLIC -DHAVE_CONFIG_H -DVERSION="${FILE_VERSION}" -DWIN32_LEAN_AND_MEAN -DWIN32 -DPCRE2_STATIC -DHAVE_FORK=0 -Dpipe=sizeof -Dfcntl=sizeof -DF_SETFD=0)
+target_include_directories(libmagicstatic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/win-headers pcre2/src file/src dirent/include getopt zlib-ng ${CMAKE_BINARY_DIR}/zlib-ng lzma/src/liblzma/api bzip2)
+target_compile_definitions(libmagicstatic PUBLIC -DHAVE_CONFIG_H -DVERSION="${FILE_VERSION}" -DWIN32_LEAN_AND_MEAN -DWIN32 -DPCRE2_STATIC -DZLIBSUPPORT -DHAVE_ZLIB_H -DXZLIBSUPPORT -DHAVE_LZMA_H -DLZMA_API_STATIC -DHAVE_BZLIB_H -DBZLIBSUPPORT -DHAVE_FORK=0 -Dpipe=sizeof -Dfcntl=sizeof -DF_SETFD=0)
 
 add_library(libmagic SHARED $<TARGET_OBJECTS:libmagicstatic>) 
-target_link_libraries(libmagic pcre2-posix shlwapi)
+
+set(LIBMAGIC_LIBS pcre2-posix shlwapi liblzma zlibstatic libbz2)
+
+target_link_libraries(libmagic ${LIBMAGIC_LIBS})
 
 set_property(TARGET libmagicstatic PROPERTY ARCHIVE_OUTPUT_NAME libmagic)
 # Fix conflict with dll import lib.
@@ -90,31 +93,50 @@ set_property(TARGET libmagic PROPERTY IMPORT_PREFIX imp)
 
 add_subdirectory(pcre2)
 
+set(BUILD_SHARED_LIBS OFF)
+add_subdirectory(lzma)
+
+set(ZLIB_COMPAT ON)
+add_subdirectory(zlib-ng)
+
+add_custom_command(
+    OUTPUT ${CMAKE_SOURCE_DIR}/bzip2/libbz2.lib
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/bzip2
+    COMMAND nmake -f makefile.msc lib
+)
+
+add_custom_target(
+    build-libbz2 DEPENDS ${CMAKE_SOURCE_DIR}/bzip2/libbz2.lib
+)
+
+add_library(libbz2 STATIC IMPORTED)
+
+set_property(
+    TARGET libbz2
+    PROPERTY IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/bzip2/libbz2.lib
+)
+
 # copy /pcre2posix.h to regex.h so it can be used as posix regex libary
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/pcre2/src/pcre2posix.h ${CMAKE_CURRENT_SOURCE_DIR}/pcre2/src/regex.h COPYONLY)
 
 add_executable(file file/src/file.c file.rc)
 
 target_include_directories(file PRIVATE "${CMAKE_BINARY_DIR}")
+target_link_libraries(file libmagicstatic ${LIBMAGIC_LIBS})
 
 add_executable(file_test file/tests/test.c)
-target_link_libraries(file_test libmagicstatic pcre2-posix shlwapi)
-target_link_libraries(file libmagicstatic pcre2-posix shlwapi)
+
+target_link_libraries(file_test libmagicstatic ${LIBMAGIC_LIBS})
 
 # Cleanup changes to submodules post-build.
-add_custom_command(
-    TARGET file POST_BUILD
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/file
-    COMMAND git reset --hard HEAD
-    COMMAND git clean -dxf
-)
-
-add_custom_command(
-    TARGET file POST_BUILD
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/pcre2
-    COMMAND git reset --hard HEAD
-    COMMAND git clean -dxf
-)
+foreach(submodule file pcre2 bzip2)
+    add_custom_command(
+        TARGET file POST_BUILD
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/${submodule}
+        COMMAND git reset --hard HEAD
+        COMMAND git clean -dxf
+    )
+endforeach()
 
 # this tests all because of time-zone or crlf errors
 set(DISABLED_TESTS 

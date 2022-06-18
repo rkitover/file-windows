@@ -1,13 +1,26 @@
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.15)
 
 project(file)
+
+include(cmake/SetCompilerLinkerFlags.cmake)
+
+# Link MSVC runtime statically.
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
+add_definitions(-D__STDC_LIMIT_MACROS -DWIN32 -D_FILE_OFFSET_BITS=64)
+
+# Enable max opt flags and LTO for non-debug builds.
+if(CMAKE_BUILD_TYPE STREQUAL Release)
+  add_compiler_flags(/fp:fast /Oi /O2 /Ob3 /GL)
+  add_linker_flags(/LTCG)
+endif()
 
 function(cat IN_FILE OUT_FILE)
   file(READ ${IN_FILE} CONTENTS)
   file(APPEND ${OUT_FILE} "${CONTENTS}")
 endfunction()
 
-set(FILE_VERSION 5.41)
+set(FILE_VERSION 5.42)
 
 configure_file(
   "file-version.h.in"
@@ -99,22 +112,19 @@ add_subdirectory(lzma)
 set(ZLIB_COMPAT ON)
 add_subdirectory(zlib-ng)
 
-add_custom_command(
-    OUTPUT ${CMAKE_SOURCE_DIR}/bzip2/libbz2.lib
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/bzip2
-    COMMAND nmake -f makefile.msc lib
+set(LIBBZ2_SOURCES
+  bzip2/blocksort.c
+  bzip2/huffman.c
+  bzip2/crctable.c
+  bzip2/randtable.c
+  bzip2/compress.c
+  bzip2/decompress.c
+  bzip2/bzlib.c
 )
 
-add_custom_target(
-    build-libbz2 DEPENDS ${CMAKE_SOURCE_DIR}/bzip2/libbz2.lib
-)
+add_library(libbz2 STATIC ${LIBBZ2_SOURCES})
 
-add_library(libbz2 STATIC IMPORTED)
-
-set_property(
-    TARGET libbz2
-    PROPERTY IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/bzip2/libbz2.lib
-)
+target_compile_definitions(libbz2 PUBLIC -DWIN32 -D_FILE_OFFSET_BITS=64)
 
 # copy /pcre2posix.h to regex.h so it can be used as posix regex libary
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/pcre2/src/pcre2posix.h ${CMAKE_CURRENT_SOURCE_DIR}/pcre2/src/regex.h COPYONLY)
@@ -129,7 +139,7 @@ add_executable(file_test file/tests/test.c)
 target_link_libraries(file_test libmagicstatic ${LIBMAGIC_LIBS})
 
 # Cleanup changes to submodules post-build.
-foreach(submodule file pcre2 bzip2)
+foreach(submodule file pcre2)
     add_custom_command(
         TARGET file POST_BUILD
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/${submodule}

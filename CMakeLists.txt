@@ -20,7 +20,7 @@ function(cat IN_FILE OUT_FILE)
   file(APPEND ${OUT_FILE} "${CONTENTS}")
 endfunction()
 
-set(FILE_VERSION 5.43)
+set(FILE_VERSION 5.44)
 
 configure_file(
   "file-version.h.in"

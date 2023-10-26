@@ -20,7 +20,7 @@ function(cat IN_FILE OUT_FILE)
   file(APPEND ${OUT_FILE} "${CONTENTS}")
 endfunction()
 
-set(FILE_VERSION 5.44)
+set(FILE_VERSION 5.45)
 
 configure_file(
   "file-version.h.in"
@@ -59,6 +59,7 @@ set(LIBMAGIC_SOURCE_FILES
   file/src/fsmagic.c
   file/src/funcs.c
   file/src/is_json.c
+  file/src/is_simh.c
   file/src/is_tar.c
   ${CMAKE_CURRENT_BINARY_DIR}/magic.c
   file/src/print.c
